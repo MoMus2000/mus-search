@@ -323,6 +323,7 @@ version = "0.1.0"
 dependencies = [
  "lopdf",
  "pdf-extract",
+ "rust-stemmers",
  "serde_json",
 ]
 
@@ -427,6 +428,12 @@ dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
 ]
+
+[[package]]
+name = "rust-stemmers"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8398e39ef1740238f87fcc4171fccc2231ba7ef1ecd64075d77feb0041927fc7"
 
 [[package]]
 name = "ryu"

@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::fs::{File, ReadDir};
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
+use lopdf::Document;
+mod snowball;
 
 #[derive(Debug)]
 struct Lexer<'a>{
@@ -43,7 +45,13 @@ impl <'a> Lexer<'a>{
             }
             let token = &self.content[0..n];
             self.content = &self.content[n..];
-            return Some(token.iter().collect::<String>())
+
+            let tok = token.iter().collect::<String>();
+            let mut env = crate::snowball::SnowballEnv::create(&tok);
+            crate::snowball::algorithms::english_stemmer::stem(&mut env);
+            let stemmed_term = env.get_current().to_string();
+
+            return Some(stemmed_term)
         }
         let token = &self.content[0..1];
         self.content = &self.content[1..];
@@ -124,7 +132,7 @@ pub fn search() -> io::Result<()>{
 }
 
 fn term_freq(term: &str, document: &TF) -> f32{
-    let mut sum = 0;
+    let mut sum = 1;
     for (_, f) in document{
         sum += f;
     }
@@ -134,7 +142,7 @@ fn term_freq(term: &str, document: &TF) -> f32{
 fn inverse_document_freq(term: &str, document: &TFIndex) -> f32 {
     let n = document.len() as f32;
 
-    let mut num_of_occurences_of_t = 0 as f32;
+    let mut num_of_occurences_of_t = 1 as f32;
 
     for (_, document_table) in document{
         if document_table.contains_key(term) {
@@ -152,7 +160,7 @@ fn inverse_document_freq(term: &str, document: &TFIndex) -> f32 {
 pub fn main() -> io::Result<()>{
     // index()?;
 
-    // search()?;
+    search()?;
 
     Ok(())
 }
@@ -165,9 +173,6 @@ pub fn index() -> io::Result<()>{
     for path in paths.lines(){
         let mut contents = String::new();
         if path.contains("pdf") {
-            use lopdf::Document;
-            use lopdf::content::Content;
-            use lopdf::content::Operation;
             let doc = Document::load(path).unwrap();
             let mut full_text = String::new(); 
             for page_id in doc.page_iter() {
@@ -177,11 +182,16 @@ pub fn index() -> io::Result<()>{
             }
             contents = full_text;
         }
+        else if path.contains(".git") {
+            continue
+        }
         else{
             let mut file = File::open(path)?;
             if let Err(e) = file.read_to_string(&mut contents) {
                 eprintln!("Failed to read the file {}: {}", path, e);
-                continue;
+                let mut buf = vec![];
+                file.read_to_end (&mut buf)?;
+                contents = String::from_utf8_lossy (&buf).to_string();
             }
         }
         let content = contents.chars().collect::<Vec<_>>();
@@ -196,6 +206,8 @@ pub fn index() -> io::Result<()>{
         }
 
         tf_index.insert(path.into(), tf);
+
+        println!("Indexed: {path} with tokens {}", tf_index.len())
 
     }
 

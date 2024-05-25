@@ -15,4 +15,5 @@ name="mus_search"
 [dependencies]
 lopdf = "0.32.0"
 pdf-extract = "0.7.7"
+rust-stemmers = "=0.1.0"
 serde_json = "1.0.117"
