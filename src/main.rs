@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use std::fs::{File, ReadDir};
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 use std::path::PathBuf;
-use serde_json::Result;
 
 #[derive(Debug)]
 struct Lexer<'a>{
@@ -20,7 +19,7 @@ impl <'a> Lexer<'a>{
         }
     }
 
-    fn next_token(&mut self) -> Option<&'a [char]>{
+    fn next_token(&mut self) -> Option<String>{
         self.trim_left();
 
         if self.content.len() == 0 {
@@ -34,7 +33,7 @@ impl <'a> Lexer<'a>{
             }
             let token = &self.content[0..n];
             self.content = &self.content[n..];
-            return Some(token)
+            return Some(token.iter().collect::<String>())
         }
 
         if self.content[0].is_alphabetic(){
@@ -44,17 +43,17 @@ impl <'a> Lexer<'a>{
             }
             let token = &self.content[0..n];
             self.content = &self.content[n..];
-            return Some(token)
+            return Some(token.iter().collect::<String>())
         }
         let token = &self.content[0..1];
         self.content = &self.content[1..];
-        return Some(token)
+        return Some(token.iter().collect::<String>())
     }
 
 }
 
 impl<'a> Iterator for Lexer<'a>{
-    type Item = &'a [char];
+    type Item = String;
 
     fn next(&mut self) -> Option<Self::Item>{
         self.next_token()
@@ -69,7 +68,8 @@ pub fn get_all_files(dir: ReadDir, paths: &mut String){
             let dir = file.path();
             let dir = std::fs::read_dir(dir).unwrap();
             get_all_files(dir, paths);
-        } else{
+        }
+        else{
             paths.push_str(file.path().to_str().unwrap());
             paths.push_str("\n")
         }
@@ -86,11 +86,73 @@ pub fn search() -> io::Result<()>{
 
     println!("Number of files: {}", read.len());
 
+    let mut input = String::new();
+
+    print!("> ");
+    io::stdout().flush().expect("Failed to flush stdout");
+
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line");
+
+    let input = input.trim();
+
+    println!("{}", input);
+
+    let mut result = Vec::<(&str, f32)>::new();
+
+    for (path, tf_table) in &read {
+        let input = input.chars().map(|x|x.to_ascii_uppercase()).collect::<Vec<_>>();
+        let mut total_tf = 0 as f32;
+        for token in Lexer::new(&input){
+            let score = term_freq(&token, &tf_table) * inverse_document_freq(&token, &read);
+            total_tf += score;
+        }
+
+        result.push((path.to_str().unwrap(), total_tf));
+    }
+
+    result.sort_by(|(_, rank1), (_, rank2)| rank1.partial_cmp(rank2).expect(&format!("{rank1} and {rank2} are not comparable")));
+    result.reverse();
+
+    for (path, val) in &result[0..10]{
+        println!("{} => {}", path, val)
+    }
+
+
     Ok(())
 }
 
+fn term_freq(term: &str, document: &TF) -> f32{
+    let mut sum = 0;
+    for (_, f) in document{
+        sum += f;
+    }
+    *document.get(term).unwrap_or(&0) as f32  / sum as f32
+}
+
+fn inverse_document_freq(term: &str, document: &TFIndex) -> f32 {
+    let n = document.len() as f32;
+
+    let mut num_of_occurences_of_t = 0 as f32;
+
+    for (_, document_table) in document{
+        if document_table.contains_key(term) {
+            num_of_occurences_of_t += 1 as f32;
+        }
+    }
+
+    if num_of_occurences_of_t == 0f32 {
+        num_of_occurences_of_t += 1f32;
+    }
+
+    (n / num_of_occurences_of_t).log10()
+}
+
 pub fn main() -> io::Result<()>{
-    index()?;
+    // index()?;
+
+    // search()?;
 
     Ok(())
 }
@@ -102,15 +164,30 @@ pub fn index() -> io::Result<()>{
     let mut tf_index = TFIndex::new();
     for path in paths.lines(){
         let mut contents = String::new();
-        let mut file = File::open(path)?;
-        if let Err(e) = file.read_to_string(&mut contents) {
-            eprintln!("Failed to read the file {}: {}", path, e);
-            continue;
+        if path.contains("pdf") {
+            use lopdf::Document;
+            use lopdf::content::Content;
+            use lopdf::content::Operation;
+            let doc = Document::load(path).unwrap();
+            let mut full_text = String::new(); 
+            for page_id in doc.page_iter() {
+                let content = doc.get_page_content(page_id).unwrap();
+                let text = String::from_utf8_lossy(&content).to_string();
+                full_text.push_str(text.as_str());
+            }
+            contents = full_text;
+        }
+        else{
+            let mut file = File::open(path)?;
+            if let Err(e) = file.read_to_string(&mut contents) {
+                eprintln!("Failed to read the file {}: {}", path, e);
+                continue;
+            }
         }
         let content = contents.chars().collect::<Vec<_>>();
         let mut tf= TF::new();
         for lexer in Lexer::new(&content){
-           let content = lexer.iter().map(|x| x.to_ascii_uppercase()).collect::<String>();
+           let content = lexer.chars().map(|x| x.to_ascii_uppercase()).collect::<String>();
            if let Some(freq) = tf.get_mut(&content){
                 *freq += 1;
            }else{
@@ -120,20 +197,7 @@ pub fn index() -> io::Result<()>{
 
         tf_index.insert(path.into(), tf);
 
-        // let mut stats = tf.iter().collect::<Vec<_>>();
-        // stats.sort_by_key(|(_, f)| *f);
-        // stats.reverse();
-
-        // println!("File Path: {}", path);
-        // for (t, f) in stats{
-        //     println!("    {}=>{}", t,f);
-        // }
-
     }
-
-    // for (path, tf) in tf_index{
-    //     println!("path {} has unique tokens {}", path.to_str().unwrap(), tf.len())
-    // }
 
     println!("Saving file ..");
     let json_output = File::create("./tf_index.json").unwrap();
