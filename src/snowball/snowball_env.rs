@@ -29,10 +29,12 @@ impl<'a> SnowballEnv<'a> {
         self.current
     }
 
+    #[allow(dead_code)]
     pub fn set_current(&mut self, current: &'a str) {
         self.current = Cow::from(current);
     }
 
+    #[allow(dead_code)]
     pub fn set_current_s(&mut self, current: String) {
         self.current = Cow::from(current);
     }
@@ -131,6 +133,7 @@ impl<'a> SnowballEnv<'a> {
         return true;
     }
 
+    #[allow(dead_code)]
     pub fn hop_checked(&mut self, delta: i32) -> bool {
         return delta >= 0 && self.hop(delta);
     }
@@ -151,6 +154,7 @@ impl<'a> SnowballEnv<'a> {
         return true;
     }
 
+    #[allow(dead_code)]
     pub fn hop_back_checked(&mut self, delta: i32) -> bool {
         return delta >= 0 && self.hop_back(delta);
     }
@@ -267,10 +271,12 @@ impl<'a> SnowballEnv<'a> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn assign_to(&mut self) -> String {
         self.current[0..self.limit as usize].to_string()
     }
 
+    #[allow(dead_code)]
     pub fn slice_to(&mut self) -> String {
         self.current[self.bra as usize..self.ket as usize].to_string()
     }
