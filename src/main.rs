@@ -4,6 +4,7 @@ mod snowball;
 mod lexer;
 mod search;
 mod index;
+mod reverse_search;
 
 use std::env;
 
@@ -18,7 +19,7 @@ pub fn main() -> Result<()> {
 
     match args[1].as_str() {
         "index" => index::index()?,
-        "search" => search::search()?,
+        "search" => search::search(args[2].as_str().to_string())?,
         _ => {
             eprintln!("Unknown command: {}", args[1]);
             eprintln!("Commands: index, search");

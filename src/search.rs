@@ -3,38 +3,33 @@ use std::fs::File;
 use std::io::{self, Write};
 use std::path::PathBuf;
 
+use crate::reverse_search;
 use crate::lexer;
 
 type TF = HashMap::<String, usize>;
 type TFIndex = HashMap::<PathBuf, TF>;
 
-pub fn search() -> io::Result<()>{
+pub fn search(input: String) -> io::Result<()>{
     println!("Reading files ..");
-    let json_output = File::open("./tf_index.json").unwrap();
+    let json_output = std::io::BufReader::new(File::open("./tf_index.json").unwrap());
     let read : TFIndex = serde_json::from_reader(json_output).unwrap();
 
     println!("Number of files: {}", read.len());
 
-    let mut input = String::new();
-
-    print!("> ");
-    io::stdout().flush().expect("Failed to flush stdout");
-
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
-
     let input = input.trim();
-
-    println!("{}", input);
-
+    
     let mut result = Vec::<(&str, f32)>::new();
-
+    
     for (path, tf_table) in &read {
         let input = input.chars().map(|x|x.to_ascii_uppercase()).collect::<Vec<_>>();
         let mut total_tf = 0 as f32;
         for token in lexer::Lexer::new(&input){
-            let score = term_freq(&token, &tf_table) * inverse_document_freq(&token, &read);
+            let tfs = term_freq(&token, &tf_table);
+            let itfs = inverse_document_freq(&token, &read);
+            if tfs.is_nan() || itfs.is_nan(){
+                break
+            }
+            let score = tfs * itfs;
             total_tf += score;
         }
 
@@ -45,7 +40,20 @@ pub fn search() -> io::Result<()>{
     result.reverse();
 
     for (path, val) in &result[0..10]{
-        println!("{} => {}", path, val)
+        println!();
+        println!("----------------------------------------------");
+        println!("{} => {}", path, val);
+        let p = path.to_string();
+        let lines: Vec<String> = reverse_search::reverse_search(p)
+        .unwrap()
+        .lines()
+        .take(5)
+        .map(String::from)
+        .collect();
+        let result_string = lines.join("\n");
+        println!("{}", result_string);
+        println!("----------------------------------------------");
+        println!();
     }
 
 
@@ -53,27 +61,13 @@ pub fn search() -> io::Result<()>{
 }
 
 fn term_freq(term: &str, document: &TF) -> f32{
-    let mut sum = 1;
-    for (_, f) in document{
-        sum += f;
-    }
-    *document.get(term).unwrap_or(&0) as f32  / sum as f32
+    let a = document.get(term).cloned().unwrap_or(0) as f32;
+    let b = document.iter().map(|(_, f)| *f).sum::<usize>() as f32;
+    a / b
 }
 
 fn inverse_document_freq(term: &str, document: &TFIndex) -> f32 {
-    let n = document.len() as f32;
-
-    let mut num_of_occurences_of_t = 1 as f32;
-
-    for (_, document_table) in document{
-        if document_table.contains_key(term) {
-            num_of_occurences_of_t += 1 as f32;
-        }
-    }
-
-    if num_of_occurences_of_t == 0f32 {
-        num_of_occurences_of_t += 1f32;
-    }
-
-    (n / num_of_occurences_of_t).log10()
+    let d = document.len() as f32;
+    let m = document.values().filter(|tf| tf.contains_key(term)).count().max(1) as f32;
+    (d / m).log10()
 }
