@@ -54,7 +54,10 @@ pub fn reverse_search(path_string: String) -> io::Result<String>{
 
             }
         }
-        let split_by_paragraph : Vec<&str> = contents.split("\r\n\r\n\r\n").collect();
+        let mut split_by_paragraph : Vec<&str> = contents.split("\r\n").collect();
+        if split_by_paragraph.len() == 1{
+            split_by_paragraph  = contents.split("\n").collect();
+        }
 
         let name : Vec<&str> = path_string.split("/").collect();
         let path_name: Vec<&str> = path.split("/").collect();
