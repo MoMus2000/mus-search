@@ -51,7 +51,6 @@ pub fn index() -> io::Result<()>{
                 let mut buf = vec![];
                 file.read_to_end (&mut buf)?;
                 contents = String::from_utf8_lossy (&buf).to_string();
-                // panic!("Should not happen {}", e);
             }
         }
 
@@ -78,23 +77,8 @@ pub fn index() -> io::Result<()>{
             println!("Indexed: {} with tokens {}", identifier, tf_index.len());
             tf_index.insert(identifier.into(), tf);
         }
-
-        // let content = contents.chars().collect::<Vec<_>>();
-        // let mut tf= TF::new();
-        // for lexer in lexer::Lexer::new(&content){
-        //    let content = lexer.chars().map(|x| x.to_ascii_uppercase()).collect::<String>();
-        //    if let Some(freq) = tf.get_mut(&content){
-        //         *freq += 1;
-        //    }else{
-        //         tf.insert(content, 1);
-        //    }
-        // }
-
-        // tf_index.insert(path.into(), tf);
-        // println!("Indexed: {} with tokens {}", path, tf_index.len());
     }
 
-    println!("KEYS : {:?}", tf_index.keys());
     println!("Saving file ..");
     let json_output = std::io::BufWriter::new(File::create("./tf_index.json").unwrap());
     serde_json::to_writer(json_output, &tf_index).unwrap();

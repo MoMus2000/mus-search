@@ -1,13 +1,6 @@
-use std::collections::HashMap;
 use std::fs::{File, ReadDir};
 use std::io::{self, Read};
-use std::path::PathBuf;
 use lopdf::Document;
-
-use crate::lexer;
-
-type TF = HashMap::<String, usize>;
-type TFIndex = HashMap::<PathBuf, TF>;
 
 pub fn get_all_files(dir: ReadDir, paths: &mut String){
     for file in dir {
@@ -29,7 +22,6 @@ pub fn reverse_search(path_string: String) -> io::Result<String>{
     let mut paths = String::new();
     let dir = std::fs::read_dir("./data")?;
     get_all_files(dir, &mut paths);
-    let mut tf_index = TFIndex::new();
     for path in paths.lines(){
         let mut contents = String::new();
         if path.contains("pdf") {
@@ -47,7 +39,7 @@ pub fn reverse_search(path_string: String) -> io::Result<String>{
         }
         else{
             let mut file = std::io::BufReader::new(File::open(path).unwrap());
-            if let Err(e) = file.read_to_string(&mut contents) {
+            if let Err(_) = file.read_to_string(&mut contents) {
                 let mut buf = vec![];
                 file.read_to_end (&mut buf)?;
                 contents = String::from_utf8_lossy(&buf).to_string();
@@ -63,7 +55,6 @@ pub fn reverse_search(path_string: String) -> io::Result<String>{
         let path_name: Vec<&str> = path.split("/").collect();
 
         let title = name[2];
-        let locs = name[4];
         let loc : i32= name[4].parse::<i32>().unwrap();
         
         if title == path_name[2]{
