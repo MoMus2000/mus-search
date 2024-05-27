@@ -79,6 +79,10 @@ pub fn index() -> io::Result<()>{
         }
     }
 
+    for (a, b) in &tf_index{
+        println!("{} {}", a.to_str().unwrap(), b.len());
+    }
+
     println!("Saving file ..");
     let json_output = std::io::BufWriter::new(File::create("./tf_index.json").unwrap());
     serde_json::to_writer(json_output, &tf_index).unwrap();
