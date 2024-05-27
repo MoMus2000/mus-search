@@ -10,7 +10,7 @@ use crate::reverse_search;
 use crate::lexer;
 
 type TF = HashMap::<String, usize>;
-type TFIndex = HashMap::<PathBuf, TF>;
+type TFIndex = HashMap::<PathBuf, (usize, TF)>;
 
 
 pub fn search(input: String) -> io::Result<()>{
@@ -31,12 +31,12 @@ pub fn search(input: String) -> io::Result<()>{
 
     let input = input.trim();
     
-    let mut result: Vec<(String, f32)> = read.par_iter().map(|(path, tf_table)| {
+    let mut result: Vec<(String, f32)> = read.par_iter().map(|(path, (n, tf_table))| {
         let input_chars: Vec<_> = input.chars().collect();
         let mut total_tf = 0.0;
     
         for token in lexer::Lexer::new(&input_chars) {
-            let tfs = term_freq(&token, &tf_table);
+            let tfs = term_freq(&token, *n,&tf_table);
             let itfs = inverse_document_freq(&token, read.len(), &doc_freq);
             if tfs.is_nan() || itfs.is_nan(){
                 break;
@@ -78,9 +78,9 @@ pub fn search(input: String) -> io::Result<()>{
     Ok(())
 }
 
-fn term_freq(term: &str, document: &TF) -> f32{
+fn term_freq(term: &str, n:usize, document: &TF) -> f32{
     let a = document.get(term).cloned().unwrap_or(0) as f32;
-    let b = document.iter().map(|(_, f)| *f).sum::<usize>() as f32;
+    let b = n as f32;
     a / b
 }
 

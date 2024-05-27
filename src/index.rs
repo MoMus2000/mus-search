@@ -7,7 +7,7 @@ use lopdf::Document;
 use crate::lexer;
 
 type TF = HashMap::<String, usize>;
-type TFIndex = HashMap::<PathBuf, TF>;
+type TFIndex = HashMap::<PathBuf, (usize, TF)>;
 type DocFreq = TF;
 
 pub fn get_all_files(dir: ReadDir, paths: &mut String){
@@ -67,12 +67,14 @@ pub fn index() -> io::Result<()>{
         for paragraph in split_by_paragraph{
             let content = paragraph.chars().collect::<Vec<_>>();
             let mut tf= TF::new();
+            let mut count = 0 ;
             for lexer in lexer::Lexer::new(&content){
                 if let Some(freq) = tf.get_mut(&lexer){
                         *freq += 1;
                 }else{
                         tf.insert(lexer, 1);
                 }
+                count += 1;
             }
 
             for t in tf.keys() {
@@ -86,12 +88,12 @@ pub fn index() -> io::Result<()>{
             let identifier = format!("{}/paragraph/{}", path, i);
             i += 1;
             println!("Indexed: {} with tokens {}", identifier, tf_index.len());
-            tf_index.insert(identifier.into(), tf);
+            tf_index.insert(identifier.into(), (count, tf));
         }
     }
 
-    for (a, b) in &tf_index{
-        println!("{} {}", a.to_str().unwrap(), b.len());
+    for (a, (b, c)) in &tf_index{
+        println!("{} {}", a.to_str().unwrap(), c.len());
     }
 
     println!("Saving file ..");
