@@ -16,7 +16,9 @@ type TFIndex = HashMap::<PathBuf, TF>;
 pub fn search(input: String) -> io::Result<()>{
     println!("Reading files ..");
     let json_output = std::io::BufReader::new(File::open("./tf_index.json").unwrap());
+    let doc_freq_json_output = std::io::BufReader::new(File::open("./tf_doc_index.json").unwrap());
     let read : TFIndex = serde_json::from_reader(json_output).unwrap();
+    let doc_freq : TF = serde_json::from_reader(doc_freq_json_output).unwrap();
 
     println!("Number of files: {}", read.len());
 
@@ -35,9 +37,9 @@ pub fn search(input: String) -> io::Result<()>{
     
         for token in lexer::Lexer::new(&input_chars) {
             let tfs = term_freq(&token, &tf_table);
-            let itfs = inverse_document_freq(&token, &read);
+            let itfs = inverse_document_freq(&token, read.len(), &doc_freq);
             if tfs.is_nan() || itfs.is_nan(){
-                continue;
+                break;
             }
             let score = tfs * itfs;
             total_tf += score;
@@ -82,8 +84,8 @@ fn term_freq(term: &str, document: &TF) -> f32{
     a / b
 }
 
-fn inverse_document_freq(term: &str, document: &TFIndex) -> f32 {
-    let d = document.len() as f32;
-    let m = document.values().filter(|tf| tf.contains_key(term)).count().max(1) as f32;
+fn inverse_document_freq(term: &str, n:usize, doc_freq: &TF) -> f32 {
+    let d = n as f32;
+    let m = doc_freq.get(term).cloned().unwrap_or(1) as f32;
     (d / m).log10()
 }

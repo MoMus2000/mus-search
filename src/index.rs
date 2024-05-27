@@ -8,6 +8,7 @@ use crate::lexer;
 
 type TF = HashMap::<String, usize>;
 type TFIndex = HashMap::<PathBuf, TF>;
+type DocFreq = TF;
 
 pub fn get_all_files(dir: ReadDir, paths: &mut String){
     for file in dir {
@@ -30,6 +31,7 @@ pub fn index() -> io::Result<()>{
     let dir = std::fs::read_dir("./data")?;
     get_all_files(dir, &mut paths);
     let mut tf_index = TFIndex::new();
+    let mut doc_freq = DocFreq::new();
     for path in paths.lines(){
         let mut contents = String::new();
         if path.contains("pdf") {
@@ -47,7 +49,7 @@ pub fn index() -> io::Result<()>{
         }
         else{
             let mut file = std::io::BufReader::new(File::open(path).unwrap());
-            if let Err(e) = file.read_to_string(&mut contents) {
+            if let Err(_) = file.read_to_string(&mut contents) {
                 let mut buf = vec![];
                 file.read_to_end (&mut buf)?;
                 contents = String::from_utf8_lossy (&buf).to_string();
@@ -72,6 +74,15 @@ pub fn index() -> io::Result<()>{
                         tf.insert(lexer, 1);
                 }
             }
+
+            for t in tf.keys() {
+                if let Some(f) = doc_freq.get_mut(t) {
+                    *f += 1;
+                } else {
+                    doc_freq.insert(t.to_string(), 1);
+                }
+            }
+
             let identifier = format!("{}/paragraph/{}", path, i);
             i += 1;
             println!("Indexed: {} with tokens {}", identifier, tf_index.len());
@@ -85,7 +96,9 @@ pub fn index() -> io::Result<()>{
 
     println!("Saving file ..");
     let json_output = std::io::BufWriter::new(File::create("./tf_index.json").unwrap());
+    let doc_freq_json_output = std::io::BufWriter::new(File::create("./tf_doc_index.json").unwrap());
     serde_json::to_writer(json_output, &tf_index).unwrap();
+    serde_json::to_writer(doc_freq_json_output, &doc_freq).unwrap();
 
     Ok(())
 }
