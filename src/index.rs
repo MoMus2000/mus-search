@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::fs::{File, ReadDir};
 use std::io::{self, Read};
 use std::path::PathBuf;
-use lopdf::Document;
 
 use crate::lexer;
 
@@ -27,22 +26,39 @@ pub fn get_all_files(dir: ReadDir, paths: &mut String){
 }
 
 pub fn index() -> io::Result<()>{
+    println!("Indexing ..");
     let mut paths = String::new();
     let dir = std::fs::read_dir("./data")?;
     get_all_files(dir, &mut paths);
     let mut tf_index = TFIndex::new();
     let mut doc_freq = DocFreq::new();
     for path in paths.lines(){
+        println!("{}", path);
         let mut contents = String::new();
         if path.contains("pdf") {
-            let doc = Document::load(path).unwrap();
-            let mut full_text = String::new(); 
-            for page_id in doc.page_iter() {
-                let content = doc.get_page_content(page_id).unwrap();
-                let text = String::from_utf8_lossy(&content).to_string();
-                full_text.push_str(text.as_str());
+            use poppler::Document;
+
+            let mut content = Vec::new();
+
+            File::open(path)
+                .and_then(|mut file| file.read_to_end(&mut content))
+                .map_err(|_| {
+                    eprintln!("ERROR: could not read file");
+                }).unwrap();
+
+            let pdf = Document::from_data(&content, None).map_err(|_| {
+                eprintln!("ERROR: could not read file")
+            }).unwrap();
+
+            let n = pdf.n_pages();
+            for i in 0..n {
+                let page = pdf.page(i).expect(&format!("{i} is within the bounds of the range of the page"));
+                if let Some(content) = page.text() {
+                    println!("{}", content);
+                    contents.push_str(content.as_str());
+                    contents.push_str("\n");
+                }
             }
-            contents = full_text;
         }
         else if path.contains(".git") {
             continue
@@ -92,7 +108,7 @@ pub fn index() -> io::Result<()>{
         }
     }
 
-    for (a, (b, c)) in &tf_index{
+    for (a, (_, c)) in &tf_index{
         println!("{} {}", a.to_str().unwrap(), c.len());
     }
 

@@ -1,6 +1,5 @@
 use std::fs::{File, ReadDir};
 use std::io::{self, Read};
-use lopdf::Document;
 
 pub fn get_all_files(dir: ReadDir, paths: &mut String){
     for file in dir {
@@ -25,15 +24,43 @@ pub fn reverse_search(path_string: String) -> io::Result<String>{
     for path in paths.lines(){
         let mut contents = String::new();
         if path.contains("pdf") {
-            let doc = Document::load(path).unwrap();
-            let mut full_text = String::new(); 
-            for page_id in doc.page_iter() {
-                let content = doc.get_page_content(page_id).unwrap();
-                let text = String::from_utf8_lossy(&content).to_string();
-                full_text.push_str(text.as_str());
+            use poppler::Document;
+
+            let mut content = Vec::new();
+
+            File::open(path)
+                .and_then(|mut file| file.read_to_end(&mut content))
+                .map_err(|_| {
+                    eprintln!("ERROR: could not read file");
+                }).unwrap();
+
+            let pdf = Document::from_data(&content, None).map_err(|_| {
+                eprintln!("ERROR: could not read file")
+            }).unwrap();
+
+            let n = pdf.n_pages();
+            for i in 0..n {
+                let page = pdf.page(i).expect(&format!("{i} is within the bounds of the range of the page"));
+                if let Some(content) = page.text() {
+                    contents.push_str(content.as_str());
+                    contents.push_str("\n");
+                }
             }
-            contents = full_text;
+
+            let split_by_paragraph : Vec<&str> = contents.split("\n").collect();
+            let name : Vec<&str> = path_string.split("/").collect();
+            let path_name: Vec<&str> = path.split("/").collect();
+
+            let title = name[2];
+            let loc : i32= name[4].parse::<i32>().unwrap();
+            
+            if title == path_name[2]{
+                println!("{}", split_by_paragraph.len());
+                return Ok(split_by_paragraph.get(loc as usize).unwrap().to_string())
+            }
+
         }
+
         else if path.contains(".git") {
             continue
         }
