@@ -4,7 +4,7 @@ use std::io;
 use std::path::PathBuf;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
-use std::io::{Write}; // Import the necessary modules
+use std::io::Write; // Import the necessary modules
 
 
 use crate::reverse_search;
@@ -16,6 +16,7 @@ type TFIndex = HashMap::<PathBuf, (usize, TF)>;
 
 pub fn search() -> io::Result<()>{
     println!("Reading files ..");
+
     let json_output = std::io::BufReader::new(File::open("./tf_index.json").unwrap());
     let doc_freq_json_output = std::io::BufReader::new(File::open("./tf_doc_index.json").unwrap());
     let read : TFIndex = serde_json::from_reader(json_output).unwrap();

@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 
 type TF = HashMap<String, usize>;
-type IDF = HashMap<TF, usize>;
+// type IDF = HashMap<TF, usize>;
 
-pub struct Model {
-    pub tf: TF,
-    pub idf: IDF
-}
+// pub struct Model {
+//     pub tf: TF,
+//     pub idf: IDF
+// }
 
-impl Model {
-    // Add functions to include, remove documents to index etc
-}
+// impl Model {
+//     // Add functions to include, remove documents to index etc
+// }
 
 pub fn term_freq(term: &str, n:usize, document: &TF) -> f32{
     let a = document.get(term).cloned().unwrap_or(0) as f32;
