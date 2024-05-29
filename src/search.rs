@@ -4,6 +4,7 @@ use std::io;
 use std::path::PathBuf;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
+use std::io::{Write}; // Import the necessary modules
 
 
 use crate::reverse_search;
@@ -13,8 +14,7 @@ use crate::model;
 type TF = HashMap::<String, usize>;
 type TFIndex = HashMap::<PathBuf, (usize, TF)>;
 
-
-pub fn search(input: String) -> io::Result<()>{
+pub fn search() -> io::Result<()>{
     println!("Reading files ..");
     let json_output = std::io::BufReader::new(File::open("./tf_index.json").unwrap());
     let doc_freq_json_output = std::io::BufReader::new(File::open("./tf_doc_index.json").unwrap());
@@ -23,54 +23,68 @@ pub fn search(input: String) -> io::Result<()>{
 
     println!("Number of files: {}", read.len());
 
-    let bar = ProgressBar::new(read.len() as u64);
+    loop {
+        print!("> "); // Print the prompt
+        io::stdout().flush().unwrap(); // Make sure the prompt is displayed
 
-    bar.set_style(ProgressStyle::default_bar()
-        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg}")
-        .unwrap()
-        .progress_chars("#>-"));
+        let mut input = String::new(); // Create a mutable string to hold the input
+        io::stdin().read_line(&mut input).expect("Failed to read line"); // Read the input
 
-    let input = input.trim();
-    
-    let mut result: Vec<(String, f32)> = read.par_iter().map(|(path, (n, tf_table))| {
-        let input_chars: Vec<_> = input.chars().collect();
-        let mut total_tf = 0.0;
-    
-        for token in lexer::Lexer::new(&input_chars) {
-            let tfs = model::term_freq(&token, *n,&tf_table);
-            let itfs = model::inverse_document_freq(&token, read.len(), &doc_freq);
-            if tfs.is_nan() || itfs.is_nan(){
-                break;
-            }
-            let score = tfs * itfs;
-            total_tf += score;
+        let input = input.trim(); // Trim any whitespace
+        if input == "exit" { // Add a way to exit the loop
+            break;
         }
 
-        bar.inc(1);
-        bar.set_message(format!("Processing item {}", path.to_str().unwrap()));
-    
-        (path.to_str().unwrap().to_string(), total_tf)
-    }).collect();
+        let bar = ProgressBar::new(read.len() as u64);
 
-    bar.finish_with_message("done");
+        bar.set_style(ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg}")
+            .unwrap()
+            .progress_chars("#>-"));
 
-    result.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        let input = input.trim();
+        
+        let mut result: Vec<(String, f32)> = read.par_iter().map(|(path, (n, tf_table))| {
+            let input_chars: Vec<_> = input.chars().collect();
+            let mut total_tf = 0.0;
+        
+            for token in lexer::Lexer::new(&input_chars) {
+                let tfs = model::term_freq(&token, *n,&tf_table);
+                let itfs = model::inverse_document_freq(&token, read.len(), &doc_freq);
+                if tfs.is_nan() || itfs.is_nan(){
+                    break;
+                }
+                let score = tfs * itfs;
+                total_tf += score;
+            }
 
-    for (path, val) in &result[0..10]{
-        println!();
-        println!("----------------------------------------------");
-        println!("{} => {}", path, val);
-        let p = path.to_string();
-        let lines: Vec<String> = reverse_search::reverse_search(p)
-        .unwrap()
-        .lines()
-        .take(50)
-        .map(String::from)
-        .collect();
-        let result_string = lines.join("\n");
-        println!("{}", result_string);
-        println!("----------------------------------------------");
-        println!();
+            bar.inc(1);
+            bar.set_message(format!("Processing item {}", path.to_str().unwrap()));
+        
+            (path.to_str().unwrap().to_string(), total_tf)
+        }).collect();
+
+        bar.finish_with_message("done");
+
+        result.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+
+        for (path, val) in &result[0..10]{
+            println!();
+            println!("----------------------------------------------");
+            println!("{} => {}", path, val);
+            let p = path.to_string();
+            let lines: Vec<String> = reverse_search::reverse_search(p)
+            .unwrap()
+            .lines()
+            .take(50)
+            .map(String::from)
+            .collect();
+            let result_string = lines.join("\n");
+            println!("{}", result_string);
+            println!("----------------------------------------------");
+            println!();
+        }
+
     }
 
     Ok(())

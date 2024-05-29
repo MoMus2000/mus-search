@@ -115,11 +115,11 @@ fn index_text(mut tf_index : TFIndex, mut doc_freq: DocFreq, path: &str) -> (TFI
     ( tf_index, doc_freq )
 }
 
-pub fn index() -> io::Result<()>{
+pub fn index(index_folder: String) -> io::Result<()>{
     println!("Indexing ..");
 
     let mut paths = String::new();
-    let dir = std::fs::read_dir("./data")?;
+    let dir = std::fs::read_dir(index_folder)?;
 
     get_all_files(dir, &mut paths);
 
@@ -142,10 +142,6 @@ pub fn index() -> io::Result<()>{
             (tf_index, doc_freq) = index_text(tf_index, doc_freq, path);
         }
 
-    }
-
-    for (a, (_, c)) in &tf_index{
-        println!("{} {}", a.to_str().unwrap(), c.len());
     }
 
     println!("Saving file ..");

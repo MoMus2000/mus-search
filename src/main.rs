@@ -19,8 +19,8 @@ pub fn main() -> Result<()> {
     }
 
     match args[1].as_str() {
-        "index" => index::index()?,
-        "search" => search::search(args[2].as_str().to_string())?,
+        "index" => index::index(args[2].as_str().to_string())?,
+        "search" => search::search()?,
         _ => {
             eprintln!("Unknown command: {}", args[1]);
             eprintln!("Commands: index, search");
