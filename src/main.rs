@@ -5,6 +5,7 @@ mod lexer;
 mod search;
 mod index;
 mod reverse_search;
+mod model;
 
 use std::env;
 

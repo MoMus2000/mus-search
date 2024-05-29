@@ -8,6 +8,7 @@ use rayon::prelude::*;
 
 use crate::reverse_search;
 use crate::lexer;
+use crate::model;
 
 type TF = HashMap::<String, usize>;
 type TFIndex = HashMap::<PathBuf, (usize, TF)>;
@@ -36,8 +37,8 @@ pub fn search(input: String) -> io::Result<()>{
         let mut total_tf = 0.0;
     
         for token in lexer::Lexer::new(&input_chars) {
-            let tfs = term_freq(&token, *n,&tf_table);
-            let itfs = inverse_document_freq(&token, read.len(), &doc_freq);
+            let tfs = model::term_freq(&token, *n,&tf_table);
+            let itfs = model::inverse_document_freq(&token, read.len(), &doc_freq);
             if tfs.is_nan() || itfs.is_nan(){
                 break;
             }
@@ -50,8 +51,6 @@ pub fn search(input: String) -> io::Result<()>{
     
         (path.to_str().unwrap().to_string(), total_tf)
     }).collect();
-
-
 
     bar.finish_with_message("done");
 
@@ -73,18 +72,5 @@ pub fn search(input: String) -> io::Result<()>{
         println!();
     }
 
-
     Ok(())
-}
-
-fn term_freq(term: &str, n:usize, document: &TF) -> f32{
-    let a = document.get(term).cloned().unwrap_or(0) as f32;
-    let b = n as f32;
-    a / b
-}
-
-fn inverse_document_freq(term: &str, n:usize, doc_freq: &TF) -> f32 {
-    let d = n as f32;
-    let m = doc_freq.get(term).cloned().unwrap_or(1) as f32;
-    (d / m).log10()
 }
