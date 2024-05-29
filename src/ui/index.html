@@ -5,6 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Styled Input Box Example</title>
     <style>
+        #search-result-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+
+        #search-result-list li {
+            border-bottom: 1px solid #ccc;
+            padding: 15px 0; /* Increased padding for spacing */
+        }
+
+        #search-result-list li:last-child {
+            border-bottom: none;
+        }
+
+        #search-result-list li:hover {
+            background-color: #f9f9f9;
+            cursor: pointer;
+        }
         body {
             font-family: Arial, sans-serif;
             background-color: #f0f8ff;

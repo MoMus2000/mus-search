@@ -14,7 +14,7 @@ use crate::model;
 type TF = HashMap::<String, usize>;
 type TFIndex = HashMap::<PathBuf, (usize, TF)>;
 
-pub fn search(search_param : Option<String>) -> io::Result<()>{
+pub fn search(_ : Option<String>) -> io::Result<()>{
     println!("Reading files ..");
 
     let json_output = std::io::BufReader::new(File::open("./tf_index.json").unwrap());
@@ -98,8 +98,6 @@ pub fn handle_api_search(search_param : Option<String>) -> Vec<String>{
     let read : TFIndex = serde_json::from_reader(json_output).unwrap();
     let doc_freq : TF = serde_json::from_reader(doc_freq_json_output).unwrap();
 
-    println!("Number of files: {}", read.len());
-
     let input = search_param.unwrap();
 
     let input = input.trim(); // Trim any whitespace
@@ -138,7 +136,7 @@ pub fn handle_api_search(search_param : Option<String>) -> Vec<String>{
     result.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
     let mut return_vec : Vec<String> = Vec::new();
-    for (path, val) in &result[0..10]{
+    for (path, _) in &result[0..10]{
         let p = path.to_string();
         let lines: Vec<String> = reverse_search::reverse_search(p)
         .unwrap()
