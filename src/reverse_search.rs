@@ -28,11 +28,8 @@ pub fn reverse_search(path_string: String) -> io::Result<String>{
 
             let mut content = Vec::new();
 
-            File::open(path)
-                .and_then(|mut file| file.read_to_end(&mut content))
-                .map_err(|_| {
-                    eprintln!("ERROR: could not read file");
-                }).unwrap();
+            let mut file = std::io::BufReader::new(File::open(path).unwrap());
+            file.read_to_end(&mut content).unwrap();
 
             let pdf = Document::from_data(&content, None).map_err(|_| {
                 eprintln!("ERROR: could not read file")
@@ -43,7 +40,6 @@ pub fn reverse_search(path_string: String) -> io::Result<String>{
                 let page = pdf.page(i).expect(&format!("{i} is within the bounds of the range of the page"));
                 if let Some(content) = page.text() {
                     contents.push_str(content.as_str());
-                    contents.push_str("\n");
                 }
             }
 

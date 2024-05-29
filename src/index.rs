@@ -56,7 +56,6 @@ pub fn index() -> io::Result<()>{
                 if let Some(content) = page.text() {
                     println!("{}", content);
                     contents.push_str(content.as_str());
-                    contents.push_str("\n");
                 }
             }
         }

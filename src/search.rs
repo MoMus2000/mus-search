@@ -65,7 +65,6 @@ pub fn search(input: String) -> io::Result<()>{
         let lines: Vec<String> = reverse_search::reverse_search(p)
         .unwrap()
         .lines()
-        .take(10)
         .map(String::from)
         .collect();
         let result_string = lines.join("\n");
