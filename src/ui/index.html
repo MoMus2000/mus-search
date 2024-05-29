@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Styled Input Box Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 20px;
+        }
+        h1 {
+            color: #4682b4;
+            margin-top: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        label {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 300px;
+        }
+        input[type="text"]:focus {
+            border-color: #4682b4;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <form class="container" >
+        <h1>Search your indexed files</h1>
+        <label for="inputBox">Enter something:</label>
+        <input type="text" id="inputBox" name="inputBox">
+    </form>
+
+    <div class="container" style="display: none;" id="search-results">
+        <h2> Search Result(s) </h2>
+        <ul>
+            <li>A</li>
+            <li>A</li>
+            <li>A</li>
+            <li>A</li>
+            <li>A</li>
+        </ul>
+    </div>
+
+</body>
+
+<script>
+    function onInputFinished() {
+        const inputBox = document.getElementById('inputBox');
+        let text = inputBox.value
+        if (text.length != 0){
+            alert(`${text}`)
+            sent_request_to_api()
+        }
+    }
+        
+    let timeout = null;
+        
+    document.addEventListener("DOMContentLoaded", function() {
+        const inputBox = document.getElementById('inputBox');
+        
+        inputBox.addEventListener('keyup', function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(onInputFinished, 1500);
+        });
+    });
+
+    function sent_request_to_api(body){
+        fetch('http://localhost:6969/api/mus-search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                query: `${body}`,
+            })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json(); 
+            })
+            .then(data => {
+                console.log('Success:', data); 
+                document.getElementById('search-results').style.display = "block"
+            })
+            .catch(error => {
+                document.getElementById('search-results').style.display = "block"
+                console.error('There was a problem with your fetch operation:', error); // Handle any errors
+            }
+        );
+    }
+</script>
+</html>
