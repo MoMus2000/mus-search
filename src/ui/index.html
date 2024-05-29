@@ -25,6 +25,15 @@
             max-width: 400px;
             margin-top: 20px;
         }
+        .container_1 {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            margin-top: 20px;
+        }
         h1 {
             color: #4682b4;
             margin-top: 20px;
@@ -60,14 +69,9 @@
         <input type="text" id="inputBox" name="inputBox">
     </form>
 
-    <div class="container" style="display: none;" id="search-results">
+    <div class="container_1" style="display: none;" id="search-results">
         <h2> Search Result(s) </h2>
-        <ul>
-            <li>A</li>
-            <li>A</li>
-            <li>A</li>
-            <li>A</li>
-            <li>A</li>
+        <ul id="search-result-list">
         </ul>
     </div>
 
@@ -79,7 +83,8 @@
         let text = inputBox.value
         if (text.length != 0){
             alert(`${text}`)
-            sent_request_to_api()
+            clearList()
+            sent_request_to_api(text)
         }
     }
         
@@ -94,8 +99,18 @@
         });
     });
 
+    function clearList() {
+        // Get reference to the ul element
+        var ul = document.getElementById("search-result-list");
+
+        // Remove all child elements (li) from ul
+        while (ul.firstChild) {
+            ul.removeChild(ul.firstChild);
+        }
+    }
+
     function sent_request_to_api(body){
-        fetch('http://localhost:6969/api/mus-search', {
+        fetch('http://localhost:6969/api/mus_search', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -113,6 +128,15 @@
             .then(data => {
                 console.log('Success:', data); 
                 document.getElementById('search-results').style.display = "block"
+
+                var ul = document.getElementById("search-result-list");
+
+                for(i=0; i<data.length; i++){
+                    var li = document.createElement("li");
+                    li.innerHTML = data[i];
+                    ul.appendChild(li);
+                }
+
             })
             .catch(error => {
                 document.getElementById('search-results').style.display = "block"
