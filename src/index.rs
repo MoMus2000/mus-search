@@ -79,7 +79,7 @@ fn index_text(mut tf_index : TFIndex, mut doc_freq: DocFreq, path: &str) -> (TFI
     }
     let mut split_by_paragraph : Vec<&str> = contents.split("\r\n").collect();
 
-    if split_by_paragraph.len() == 1{
+    if split_by_paragraph.len() > 100{
         split_by_paragraph  = contents.split("\n").collect();
     }
 

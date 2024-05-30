@@ -11,9 +11,9 @@ Index your files and search for keywords in a jiffy.
 - index
 - search
 
-PDF, TXT support
+PDF, TXT support, API support !
 
-API support, MS-Word, Google doc support to come !
+MS-Word, Google doc support to come !
 
 ## Prerequisites
 

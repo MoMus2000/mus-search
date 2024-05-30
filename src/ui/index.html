@@ -192,7 +192,15 @@
                     
                     let result = data.meta_data[index].split("/")[2]
                     let pageNumber = data.meta_data[index].split("/")[4]
-                    let link = `http://localhost:6969/api/files/${result}#page=${pageNumber}`
+                    let link = ""
+
+                    if(data.meta_data[index].includes("pdf")){
+                        link = `http://localhost:6969/api/files/${result}#page=${pageNumber}`
+                    }
+                    else{
+                        link = `http://localhost:6969/api/files/${result}#para=${pageNumber}`
+                    }
+
                     resultLink.href = link; // Placeholder link
 
                     resultLink.addEventListener('click', function(event) {

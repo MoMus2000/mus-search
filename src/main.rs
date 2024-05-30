@@ -1,6 +1,6 @@
 use std::io::Result;
 use std::net::TcpListener;
-use actix_web::{web, App, HttpResponse, HttpServer, Responder, http};
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use std::sync::Arc;
 use actix_files::NamedFile;
 use std::collections::HashMap;
@@ -43,7 +43,6 @@ pub async fn run(listener: TcpListener) -> Result<()> {
 
     Ok(())
 }
-
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
@@ -141,6 +140,7 @@ async fn serve_file(path: web::Path<(String,)>) -> Result<NamedFile> {
         });
         
         named_file = named_file.set_content_type(mime_type);
+
         Ok(named_file)
     } else {
         Ok(NamedFile::open("./static/404.html")?)

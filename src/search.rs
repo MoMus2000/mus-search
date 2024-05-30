@@ -7,7 +7,6 @@ use rayon::prelude::*;
 use std::io::Write; // Import the necessary modules
 use std::sync::Arc;
 
-
 use crate::reverse_search;
 use crate::lexer;
 use crate::model;

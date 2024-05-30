@@ -59,14 +59,14 @@ pub fn reverse_search(path_string: String) -> io::Result<String>{
 
         else{
             let mut contents = String::new();
-
+            
             let mut file = std::io::BufReader::new(File::open(path).unwrap());
             if let Err(_) = file.read_to_string(&mut contents) {
                 let mut buf = vec![];
                 file.read_to_end (&mut buf)?;
                 contents = String::from_utf8_lossy(&buf).to_string();
-
             }
+
             let mut split_by_paragraph : Vec<&str> = contents.split("\r\n").collect();
             if split_by_paragraph.len() == 1{
                 split_by_paragraph  = contents.split("\n").collect();
@@ -83,6 +83,5 @@ pub fn reverse_search(path_string: String) -> io::Result<String>{
             }
         }
     }
-
     Ok(String::new())
 }
