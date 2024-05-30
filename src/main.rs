@@ -68,7 +68,37 @@ pub async fn serve(tcp_listener : TcpListener) -> Result<()> {
         doc_freq: Arc::new(doc_freq),
     });
 
-    println!("Serving ..");
+
+    let title = r#"
+     __  __             _____     
+    |  \/  |_   _ ___  / ___|  ___  __ _ _ __ ___| |__  
+    | |\/| | | | / __| \___ \ / _ \/ _` | '__/ __| '_ \ 
+    | |  | | |_| \__ \  ___) |  __/ (_| | | | (__| | | |
+    |_|  |_|\__,_|___/ |____/ \___|\__,_|_|  \___|_| |_|"#;
+
+    println!("{}", title);
+
+    let logo = r#"
+                     _
+                    / \      _-'
+                _/|  \-''- _ /
+                __-' { |          \
+                /             \
+                /       "o.  |o }
+                |            \ ;
+                            ',
+                    \_         __\
+                    ''-_    \.//
+                        / '-____'
+                    /
+                    _'
+                _-'"#;
+
+    println!("{}", logo);
+    println!("Loaded index ..");
+    println!("Serving @{}", tcp_listener.local_addr().unwrap());
+
+
     HttpServer::new(move || {
         App::new()
         .app_data(app_state.clone())
@@ -90,8 +120,6 @@ struct QueryPayload {
 }
 
 async fn handle_search(payload : web::Json<QueryPayload>, data: web::Data<AppState>) -> impl Responder{
-    println!("Got the query");
-
     let read = &data.read;
     let doc_freq = &data.doc_freq;
 
@@ -118,10 +146,6 @@ async fn handle_search(payload : web::Json<QueryPayload>, data: web::Data<AppSta
 }
 
 async fn serve_file(path: web::Path<(String,)>) -> Result<NamedFile> {
-    println!("Serving File");
-
-    println!("Loading Index");
-
     let file_path: PathBuf = format!("./data/{}", path.into_inner().0).parse().unwrap();
 
     // Check if the file exists and is a file (not a directory)
