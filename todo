@@ -14,3 +14,8 @@ pandoc demo.docx -o demo.html
 UPDATE ppt wont work with pandoc
 
 To make things easy recursively run pandoc on the data folder to preconvert it to text or pdf etc
+
+https://github.com/unoconv/unoserver/
+
+soffice --headless --convert-to pdf Dickinson_Sample_Slides.pptx
+soffice --headless --convert-to pdf demo.docx
