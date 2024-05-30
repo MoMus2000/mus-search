@@ -37,9 +37,9 @@ cd mus_search
 cargo build
 
 # generate the index
-cargo run index
+cargo run index ./data
 
 # perform search
-cargo run search "Your Query"
+cargo run --release serve
 
 ```
