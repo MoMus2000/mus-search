@@ -3,3 +3,14 @@ Break the text down into smaller parts so that you can create the tf for that in
 That way you will be able to return the matching value
 
 Split page by page for the pdfs since they're already conveniently set up.
+
+You can use google docs viewer to view your ppt and docx files, but they need to be on something like google drive
+to be accessed
+
+Or use pandoc to convert either the ppt or docx to html before serving.
+
+pandoc demo.docx -o demo.html
+
+UPDATE ppt wont work with pandoc
+
+To make things easy recursively run pandoc on the data folder to preconvert it to text or pdf etc

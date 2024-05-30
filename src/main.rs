@@ -7,7 +7,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::fs::File;
 use mime_guess::from_path;
-
+use indicatif::ProgressFinish;
+use indicatif::{ProgressBar, ProgressStyle};
 
 type TF = HashMap::<String, usize>;
 type TFIndex = HashMap::<PathBuf, (usize, TF)>;
@@ -125,7 +126,14 @@ async fn handle_search(payload : web::Json<QueryPayload>, data: web::Data<AppSta
 
     let query = &payload.query;
 
-    let output = search::handle_api_search(Some(query.to_string()), read, doc_freq);
+    let bar = ProgressBar::new(read.len() as u64);
+
+    bar.set_style(ProgressStyle::default_bar()
+        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg}")
+        .unwrap()
+        .progress_chars("#>-"));
+
+    let output = search::handle_api_search(&bar, Some(query.to_string()), read, doc_freq);
 
     #[derive(Debug, Serialize)]
     struct ResponsePayload{

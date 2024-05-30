@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fs::{File, ReadDir};
 use std::io::{self, Read};
-use std::path::PathBuf;
+use std::path::{self, PathBuf};
 use serde::Serialize;
 
 use crate::lexer;
@@ -107,11 +107,78 @@ fn index_text(mut tf_index : TFIndex, mut doc_freq: DocFreq, path: &str) -> (TFI
         }
 
         let identifier = format!("{}/paragraph/{}", path, i);
-        println!("Indexed: {} with tokens {}", identifier, tf_index.len());
+        // println!("Indexed: {} with tokens {}", identifier, tf_index.len());
         tf_index.insert(identifier.into(), (count, tf));
         i += 1;
     }
 
+    ( tf_index, doc_freq )
+}
+
+fn index_docx(mut tf_index : TFIndex, mut doc_freq: DocFreq, path: &str) -> (TFIndex, DocFreq){
+    use dotext::*;
+
+    let mut file = Docx::open(path).unwrap();
+    let mut isi = String::new();
+
+    let _ = file.read_to_string(&mut isi).unwrap();
+
+    let content = isi.chars().collect::<Vec<_>>();
+    let mut tf= TF::new();
+    let mut count = 0 ;
+    for lexer in lexer::Lexer::new(&content){
+        if let Some(freq) = tf.get_mut(&lexer){
+                *freq += 1;
+        }else{
+                tf.insert(lexer, 1);
+        }
+        count += 1;
+    }
+
+    for t in tf.keys() {
+        if let Some(f) = doc_freq.get_mut(t) {
+            *f += 1;
+        } else {
+            doc_freq.insert(t.to_string(), 1);
+        }
+    }
+
+    let identifier = format!("{}/document/{}", path, 0);
+    tf_index.insert(identifier.into(), (count, tf));
+
+    ( tf_index, doc_freq )
+}
+
+fn index_ppt(mut tf_index : TFIndex, mut doc_freq: DocFreq, path: &str) -> (TFIndex, DocFreq){
+    use dotext::*;
+
+    let mut ppt = Pptx::open(path).unwrap();
+    let mut isi = String::new();
+
+    let _ = ppt.read_to_string(&mut isi).unwrap();
+
+    let content = isi.chars().collect::<Vec<_>>();
+    let mut tf= TF::new();
+    let mut count = 0 ;
+    for lexer in lexer::Lexer::new(&content){
+        if let Some(freq) = tf.get_mut(&lexer){
+                *freq += 1;
+        }else{
+                tf.insert(lexer, 1);
+        }
+        count += 1;
+    }
+
+    for t in tf.keys() {
+        if let Some(f) = doc_freq.get_mut(t) {
+            *f += 1;
+        } else {
+            doc_freq.insert(t.to_string(), 1);
+        }
+    }
+
+    let identifier = format!("{}/document/{}", path, 0);
+    tf_index.insert(identifier.into(), (count, tf));
     ( tf_index, doc_freq )
 }
 
@@ -130,7 +197,7 @@ pub fn index(index_folder: String) -> io::Result<()>{
 
         println!("{}", path);
 
-        if path.contains("pdf") {
+        if path.contains(".pdf") {
             (tf_index, doc_freq) = index_pdf(tf_index, doc_freq, path);
         }
 
@@ -140,6 +207,14 @@ pub fn index(index_folder: String) -> io::Result<()>{
 
         else if path.contains(".txt") {
             (tf_index, doc_freq) = index_text(tf_index, doc_freq, path);
+        }
+
+        else if path.contains(".docx") || path.contains("doc"){
+            (tf_index, doc_freq) = index_docx(tf_index, doc_freq, path);
+        }
+
+        else if path.contains(".ppt"){
+            (tf_index, doc_freq) = index_ppt(tf_index, doc_freq, path);
         }
 
     }

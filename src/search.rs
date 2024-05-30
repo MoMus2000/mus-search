@@ -6,6 +6,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::io::Write; // Import the necessary modules
 use std::sync::Arc;
+use std::time::Instant;
 
 use crate::reverse_search;
 use crate::lexer;
@@ -90,18 +91,14 @@ pub fn search(_ : Option<String>) -> io::Result<()>{
     Ok(())
 }
 
-pub fn handle_api_search(search_param : Option<String>, read: &Arc<TFIndex>, doc_freq: &Arc<TF>) -> (Vec<String>, Vec<String>){
+pub fn handle_api_search(bar: &ProgressBar, search_param : Option<String>, read: &Arc<TFIndex>, doc_freq: &Arc<TF>) -> (Vec<String>, Vec<String>){
+
+    let start_time = Instant::now();
 
     let input = search_param.unwrap();
 
     let input = input.trim(); // Trim any whitespace
 
-    let bar = ProgressBar::new(read.len() as u64);
-
-    bar.set_style(ProgressStyle::default_bar()
-        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg}")
-        .unwrap()
-        .progress_chars("#>-"));
 
     let input = input.trim();
     
@@ -124,7 +121,12 @@ pub fn handle_api_search(search_param : Option<String>, read: &Arc<TFIndex>, doc
         (path.to_str().unwrap().to_string(), total_tf)
     }).collect();
 
-    bar.finish_with_message("done");
+    let end_time = Instant::now();
+    let duration = end_time.duration_since(start_time);
+    let duration = duration.as_millis();
+
+    bar.set_message(format!("done in {}ms", duration));
+    bar.finish();
 
     result.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
@@ -141,7 +143,6 @@ pub fn handle_api_search(search_param : Option<String>, read: &Arc<TFIndex>, doc
                 .map(String::from)
                 .collect();
                 return_vec.push(lines.join("\n"));
-        
                 return_meta.push(path.clone());
             };
         }
