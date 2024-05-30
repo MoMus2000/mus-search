@@ -48,7 +48,6 @@ pub fn reverse_search(path_string: String) -> io::Result<String>{
                 }).unwrap();
 
                 let content = pdf.page(page_number).unwrap().text().unwrap();
-                println!("{}", content.len());
                 return Ok(content.to_string())
             }
 
@@ -80,7 +79,6 @@ pub fn reverse_search(path_string: String) -> io::Result<String>{
             let loc : i32= name[4].parse::<i32>().unwrap();
             
             if title == path_name[2]{
-                println!("{}", split_by_paragraph.len());
                 return Ok(split_by_paragraph.get(loc as usize).unwrap().to_string())
             }
         }

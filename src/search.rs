@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::io::Write; // Import the necessary modules
+use std::sync::Arc;
 
 
 use crate::reverse_search;
@@ -90,13 +91,7 @@ pub fn search(_ : Option<String>) -> io::Result<()>{
     Ok(())
 }
 
-pub fn handle_api_search(search_param : Option<String>) -> Vec<String>{
-    println!("Reading files ..");
-
-    let json_output = std::io::BufReader::new(File::open("./tf_index.json").unwrap());
-    let doc_freq_json_output = std::io::BufReader::new(File::open("./tf_doc_index.json").unwrap());
-    let read : TFIndex = serde_json::from_reader(json_output).unwrap();
-    let doc_freq : TF = serde_json::from_reader(doc_freq_json_output).unwrap();
+pub fn handle_api_search(search_param : Option<String>, read: &Arc<TFIndex>, doc_freq: &Arc<TF>) -> (Vec<String>, Vec<String>){
 
     let input = search_param.unwrap();
 
@@ -126,7 +121,6 @@ pub fn handle_api_search(search_param : Option<String>) -> Vec<String>{
         }
 
         bar.inc(1);
-        bar.set_message(format!("Processing item {}", path.to_str().unwrap()));
     
         (path.to_str().unwrap().to_string(), total_tf)
     }).collect();
@@ -136,16 +130,22 @@ pub fn handle_api_search(search_param : Option<String>) -> Vec<String>{
     result.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
     let mut return_vec : Vec<String> = Vec::new();
-    for (path, _) in &result[0..10]{
-        let p = path.to_string();
-        let lines: Vec<String> = reverse_search::reverse_search(p)
-        .unwrap()
-        .lines()
-        .take(10)
-        .map(String::from)
-        .collect();
-        return_vec.push(lines.join("\n"));
-    };
+    let mut return_meta: Vec<String> = Vec::new();
 
-    return_vec
+    for (path, score) in &result[0..10]{
+        if score > &0f32 {
+                let p = path.to_string();
+                let lines: Vec<String> = reverse_search::reverse_search(p)
+                .unwrap()
+                .lines()
+                .take(10)
+                .map(String::from)
+                .collect();
+                return_vec.push(lines.join("\n"));
+        
+                return_meta.push(path.clone());
+            };
+        }
+
+    (return_vec, return_meta)
 }
