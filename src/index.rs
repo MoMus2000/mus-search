@@ -70,50 +70,41 @@ fn index_pdf(mut tf_index : TFIndex, mut doc_freq: DocFreq, path: &str) -> ( TFI
     ( tf_index, doc_freq )
 }
 
-fn index_text(mut tf_index : TFIndex, mut doc_freq: DocFreq, path: &str) -> (TFIndex, DocFreq){
-    let mut contents = String::new();
+async fn index_text(mut tf_index : TFIndex, mut doc_freq: DocFreq, path: &str) -> (TFIndex, DocFreq){
+    use reqwest::Client;
+
+    let client = Client::new();
+
+    // Read the file content
     let mut file = std::io::BufReader::new(File::open(path).unwrap());
-    if let Err(_) = file.read_to_string(&mut contents) {
-        let mut buf = vec![];
-        file.read_to_end (&mut buf).unwrap();
-        contents = String::from_utf8_lossy (&buf).to_string();
-    }
-    let mut split_by_paragraph : Vec<&str> = contents.split("\r\n").collect();
+    let mut file_content = Vec::new();
+    file.read_to_end(&mut file_content).unwrap();
 
-    if split_by_paragraph.len() > 100{
-        split_by_paragraph  = contents.split("\n").collect();
-    }
+    // Prepare the request
+    let response = client.post("http://localhost:2004/convert?convertTo=pdf")
+        .header("content-type", "application/x-www-form-urlencoded")
+        .body(file_content)
+        .send()
+        .await
+        .unwrap();
 
-    let mut i = 0;
-
-    for paragraph in split_by_paragraph{
-        let content = paragraph.chars().collect::<Vec<_>>();
-        let mut tf= TF::new();
-        let mut count = 0 ;
-        for lexer in lexer::Lexer::new(&content){
-            if let Some(freq) = tf.get_mut(&lexer){
-                    *freq += 1;
-            }else{
-                    tf.insert(lexer, 1);
-            }
-            count += 1;
-        }
-
-        for t in tf.keys() {
-            if let Some(f) = doc_freq.get_mut(t) {
-                *f += 1;
-            } else {
-                doc_freq.insert(t.to_string(), 1);
-            }
-        }
-
-        let identifier = format!("{}/paragraph/{}", path, i);
-        // println!("Indexed: {} with tokens {}", identifier, tf_index.len());
-        tf_index.insert(identifier.into(), (count, tf));
-        i += 1;
+    if !response.status().is_success(){
+        eprintln!("Error parsing file {} .. ", path);
+        return (tf_index, doc_freq);
     }
 
-    ( tf_index, doc_freq )
+    // Read the response body and write it to a file
+    let path = path.replace("txt", "pdf");
+
+    let mut output_file = std::io::BufWriter::new(File::create(&path).unwrap());
+    let mut response_body = response.bytes().await.unwrap();
+    output_file.write_all(&mut response_body).unwrap();
+
+
+    let result  = index_pdf(tf_index, doc_freq, &path);
+
+    ( result.0 , result.1 )
+
 }
 
 async fn index_docx(tf_index : TFIndex, doc_freq: DocFreq, path: &str) -> (TFIndex, DocFreq){
@@ -215,7 +206,7 @@ pub async fn index(index_folder: String) -> io::Result<()>{
         }
 
         else if path.contains(".txt") {
-            (tf_index, doc_freq) = index_text(tf_index, doc_freq, path);
+            (tf_index, doc_freq) = index_text(tf_index, doc_freq, path).await;
         }
 
         else if path.contains(".docx") || path.contains("doc"){

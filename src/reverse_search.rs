@@ -52,35 +52,8 @@ pub fn reverse_search(path_string: String) -> io::Result<String>{
             }
 
         }
-
-        else if path.contains(".git") {
-            continue
-        }
-
         else{
-            let mut contents = String::new();
-            
-            let mut file = std::io::BufReader::new(File::open(path).unwrap());
-            if let Err(_) = file.read_to_string(&mut contents) {
-                let mut buf = vec![];
-                file.read_to_end (&mut buf)?;
-                contents = String::from_utf8_lossy(&buf).to_string();
-            }
-
-            let mut split_by_paragraph : Vec<&str> = contents.split("\r\n").collect();
-            if split_by_paragraph.len() == 1{
-                split_by_paragraph  = contents.split("\n").collect();
-            }
-    
-            let name : Vec<&str> = path_string.split("/").collect();
-            let path_name: Vec<&str> = path.split("/").collect();
-    
-            let title = name[2];
-            let loc : i32= name[4].parse::<i32>().unwrap();
-            
-            if title == path_name[2]{
-                return Ok(split_by_paragraph.get(loc as usize).unwrap().to_string())
-            }
+            continue
         }
     }
     Ok(String::new())

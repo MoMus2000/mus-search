@@ -91,7 +91,7 @@ pub fn search(_ : Option<String>) -> io::Result<()>{
     Ok(())
 }
 
-pub fn handle_api_search(bar: &ProgressBar, search_param : Option<String>, read: &Arc<TFIndex>, doc_freq: &Arc<TF>) -> (Vec<String>, Vec<String>){
+pub fn handle_api_search(_: &ProgressBar, search_param : Option<String>, read: &Arc<TFIndex>, doc_freq: &Arc<TF>) -> (Vec<String>, Vec<String>){
 
     let start_time = Instant::now();
 
@@ -116,7 +116,6 @@ pub fn handle_api_search(bar: &ProgressBar, search_param : Option<String>, read:
             total_tf += score;
         }
 
-        bar.inc(1);
     
         (path.to_str().unwrap().to_string(), total_tf)
     }).collect();
@@ -125,8 +124,9 @@ pub fn handle_api_search(bar: &ProgressBar, search_param : Option<String>, read:
     let duration = end_time.duration_since(start_time);
     let duration = duration.as_millis();
 
-    bar.set_message(format!("done in {}ms", duration));
-    bar.finish();
+    let time = format!("Completed in {}ms", duration);
+    print!("Latest Search [======] {} \r", time);
+    std::io::stdout().flush().unwrap();
 
     result.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
