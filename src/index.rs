@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::fs::{File, ReadDir};
-use std::io::{self, Read};
-use std::path::{self, PathBuf};
+use std::io::{self, Read, Write};
+use std::path::PathBuf;
+use std::net::TcpStream;
 use serde::Serialize;
 
 use crate::lexer;
@@ -115,74 +116,82 @@ fn index_text(mut tf_index : TFIndex, mut doc_freq: DocFreq, path: &str) -> (TFI
     ( tf_index, doc_freq )
 }
 
-fn index_docx(mut tf_index : TFIndex, mut doc_freq: DocFreq, path: &str) -> (TFIndex, DocFreq){
-    use dotext::*;
+async fn index_docx(tf_index : TFIndex, doc_freq: DocFreq, path: &str) -> (TFIndex, DocFreq){
+    use reqwest::Client;
 
-    let mut file = Docx::open(path).unwrap();
-    let mut isi = String::new();
+    let client = Client::new();
 
-    let _ = file.read_to_string(&mut isi).unwrap();
+    // Read the file content
+    let mut file = std::io::BufReader::new(File::open(path).unwrap());
+    let mut file_content = Vec::new();
+    file.read_to_end(&mut file_content).unwrap();
 
-    let content = isi.chars().collect::<Vec<_>>();
-    let mut tf= TF::new();
-    let mut count = 0 ;
-    for lexer in lexer::Lexer::new(&content){
-        if let Some(freq) = tf.get_mut(&lexer){
-                *freq += 1;
-        }else{
-                tf.insert(lexer, 1);
-        }
-        count += 1;
+    // Prepare the request
+    let response = client.post("http://localhost:2004/convert?convertTo=pdf")
+        .header("content-type", "application/x-www-form-urlencoded")
+        .body(file_content)
+        .send()
+        .await
+        .unwrap();
+
+    if !response.status().is_success(){
+        eprintln!("Error parsing file {} .. ", path);
+        return (tf_index, doc_freq);
     }
 
-    for t in tf.keys() {
-        if let Some(f) = doc_freq.get_mut(t) {
-            *f += 1;
-        } else {
-            doc_freq.insert(t.to_string(), 1);
-        }
-    }
+    // Read the response body and write it to a file
+    let path = path.replace("docx", "pdf");
 
-    let identifier = format!("{}/document/{}", path, 0);
-    tf_index.insert(identifier.into(), (count, tf));
+    let mut output_file = std::io::BufWriter::new(File::create(&path).unwrap());
+    let mut response_body = response.bytes().await.unwrap();
+    output_file.write_all(&mut response_body).unwrap();
 
-    ( tf_index, doc_freq )
+
+    let result  = index_pdf(tf_index, doc_freq, &path);
+
+    ( result.0 , result.1 )
 }
 
-fn index_ppt(mut tf_index : TFIndex, mut doc_freq: DocFreq, path: &str) -> (TFIndex, DocFreq){
-    use dotext::*;
+async fn index_ppt(tf_index : TFIndex, doc_freq: DocFreq, path: &str) -> (TFIndex, DocFreq){
+    use reqwest::blocking::Client;
 
-    let mut ppt = Pptx::open(path).unwrap();
-    let mut isi = String::new();
+    let client = Client::new();
 
-    let _ = ppt.read_to_string(&mut isi).unwrap();
+    // Read the file content
+    let mut file = std::io::BufReader::new(File::open(path).unwrap());
+    let mut file_content = Vec::new();
+    file.read_to_end(&mut file_content).unwrap();
 
-    let content = isi.chars().collect::<Vec<_>>();
-    let mut tf= TF::new();
-    let mut count = 0 ;
-    for lexer in lexer::Lexer::new(&content){
-        if let Some(freq) = tf.get_mut(&lexer){
-                *freq += 1;
-        }else{
-                tf.insert(lexer, 1);
-        }
-        count += 1;
+    // Prepare the request
+    let response = client.post("http://localhost:2004/convert?convertTo=pdf")
+        .header("content-type", "application/x-www-form-urlencoded")
+        .body(file_content)
+        .send()
+        .unwrap();
+
+    if !response.status().is_success(){
+        eprintln!("Error parsing file {} .. ", path);
+        return (tf_index, doc_freq);
     }
 
-    for t in tf.keys() {
-        if let Some(f) = doc_freq.get_mut(t) {
-            *f += 1;
-        } else {
-            doc_freq.insert(t.to_string(), 1);
-        }
-    }
+    let path = path.replace("docx", "pdf");
 
-    let identifier = format!("{}/document/{}", path, 0);
-    tf_index.insert(identifier.into(), (count, tf));
-    ( tf_index, doc_freq )
+    let result  = index_pdf(tf_index, doc_freq, &path);
+
+    ( result.0 , result.1 )
 }
 
-pub fn index(index_folder: String) -> io::Result<()>{
+pub async fn index(index_folder: String) -> io::Result<()>{
+
+    match TcpStream::connect("127.0.0.1:2004") {
+        Ok(_) => {
+            println!("Conversion server is running");
+        }
+        Err(_) => {
+            panic!("Conversion server @ port 2003 is down");
+        }
+    }
+    
     println!("Indexing ..");
 
     let mut paths = String::new();
@@ -210,11 +219,11 @@ pub fn index(index_folder: String) -> io::Result<()>{
         }
 
         else if path.contains(".docx") || path.contains("doc"){
-            (tf_index, doc_freq) = index_docx(tf_index, doc_freq, path);
+            (tf_index, doc_freq) = index_docx(tf_index, doc_freq, path).await;
         }
 
         else if path.contains(".ppt"){
-            (tf_index, doc_freq) = index_ppt(tf_index, doc_freq, path);
+            (tf_index, doc_freq) = index_ppt(tf_index, doc_freq, path).await;
         }
 
     }

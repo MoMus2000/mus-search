@@ -7,7 +7,6 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::fs::File;
 use mime_guess::from_path;
-use indicatif::ProgressFinish;
 use indicatif::{ProgressBar, ProgressStyle};
 
 type TF = HashMap::<String, usize>;
@@ -32,7 +31,7 @@ pub async fn run(listener: TcpListener) -> Result<()> {
     }
 
     match args[1].as_str() {
-        "index" => index::index(args[2].as_str().to_string())?,
+        "index" => index::index(args[2].as_str().to_string()).await?,
         "search" => search::search(None)?,
         "serve" => serve(listener).await?,
         _ => {

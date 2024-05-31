@@ -19,3 +19,15 @@ https://github.com/unoconv/unoserver/
 
 soffice --headless --convert-to pdf Dickinson_Sample_Slides.pptx
 soffice --headless --convert-to pdf demo.docx
+
+
+I find that calibre can also handle conversions
+
+On mac 
+ln -s /Applications/calibre.app/Contents/MacOS/ebook-convert /usr/local/bin/ebook-convert
+
+But it sucks
+
+Workflow now uses the unoserver.
+
+If optimizes soffice over REST, running inside a docker image.
