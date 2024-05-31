@@ -46,8 +46,8 @@ pub async fn run(listener: TcpListener) -> Result<()> {
 
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:6969")
-        .expect("Failed to bind port 6969");
+    let listener = TcpListener::bind("127.0.0.1:8080")
+        .expect("Failed to bind port 8080");
     run(listener).await.unwrap();
     Ok(())
 }
